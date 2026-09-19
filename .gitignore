@@ -1,0 +1,65 @@
+# ==========================================
+# 1. 项目特定文件（无需上传）
+# ==========================================
+手机硬件清单表_计分类_v5.xlsx
+add_test_phone.py
+*.log
+phones.json.bak
+
+# ==========================================
+# 2. Python
+# ==========================================
+# 字节码编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 虚拟环境
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# 分发/打包
+.Python
+build/
+dist/
+eggs/
+*.egg-info/
+.installed.cfg
+
+# 单元测试/覆盖率
+.coverage
+.pytest_cache/
+
+# ==========================================
+# 3. 编辑器与 IDE
+# ==========================================
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+*.swp
+*.swo
+
+# ==========================================
+# 4. 操作系统垃圾文件
+# ==========================================
+# Windows
+Thumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
