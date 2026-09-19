@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>打分结果 - 手机性价比打分系统</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #eff6ff 0%, #dbeafe 45%, #ffffff 100%);
+    color: #1e293b;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 36px 30px;
+    width: 720px;
+    max-width: 96vw;
+    box-shadow: 0 10px 40px rgba(37, 99, 235, 0.10);
+  }
+  h2 { text-align: center; margin-bottom: 24px; font-size: 22px; color: #1d4ed8; }
+  .phone-info {
+    text-align: center; padding: 12px; background: #f8fafc;
+    border-radius: 10px; margin-bottom: 24px; font-size: 14px; color: #475569;
+  }
+  .phone-info .model { font-weight: 700; color: #1e293b; font-size: 16px; }
+  .phone-info .price { color: #ef4444; font-weight: 600; }
+
+  .total-score-box {
+    text-align: center; padding: 20px; background: #eff6ff;
+    border-radius: 12px; margin-bottom: 24px; border: 1px dashed #93c5fd;
+  }
+  .total-score-box .label { font-size: 14px; color: #475569; }
+  .total-score-box .score {
+    font-size: 42px; font-weight: 800; color: #1d4ed8; line-height: 1; margin-top: 8px;
+  }
+  .total-score-box .formula { font-size: 12px; color: #94a3b8; margin-top: 6px; }
+
+  .raw-score {
+    display: flex; justify-content: center; gap: 24px;
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px dashed #bfdbfe;
+    font-size: 13px; color: #475569;
+  }
+  .raw-score b { color: #1d4ed8; font-size: 15px; }
+
+  .category {
+    margin-bottom: 12px; border: 1px solid #e2e8f0;
+    border-radius: 10px; overflow: hidden;
+  }
+  .category-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; background: #f8fafc; cursor: pointer;
+    user-select: none; font-weight: 600; color: #334155; transition: background 0.2s;
+  }
+  .category-header:hover { background: #e2e8f0; }
+  .category-header .cat-name { font-size: 15px; }
+  .category-header .cat-score { font-size: 14px; color: #2563eb; }
+  .category-header .arrow {
+    transition: transform 0.3s; margin-left: 8px; font-size: 12px; color: #64748b;
+  }
+  .category.open .arrow { transform: rotate(90deg); }
+
+  .category-body {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.4s ease; background: #fff;
+  }
+  .category.open .category-body { max-height: 8000px; }
+
+  .subcategory {
+    padding: 10px 16px; border-top: 1px solid #f1f5f9;
+  }
+  .subcategory:first-child { border-top: none; }
+  .sub-name { font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; }
+
+  .item-header {
+    display: grid;
+    grid-template-columns: 160px 1fr 80px;
+    padding: 4px 0 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 4px;
+  }
+  .item-header span:nth-child(2) { text-align: center; }
+  .item-header span:nth-child(3) { text-align: right; }
+
+  .item {
+    display: grid;
+    grid-template-columns: 160px 1fr 80px;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #f8fafc;
+  }
+  .item:last-child { border-bottom: none; }
+  .item .item-name { color: #334155; font-weight: 500; }
+  .item .item-spec {
+    text-align: center;
+    color: #475569;
+    font-size: 12px;
+    padding: 0 8px;
+  }
+  .item .item-score {
+    text-align: right;
+    color: #2563eb;
+    font-weight: 600;
+  }
+
+  /* 可跳转的硬件项：hover 变蓝，无下划线 */
+  .item-name-link {
+    color: #334155;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .item-name-link:hover {
+    color: #2563eb;
+  }
+
+  /* 缺失项：灰色显示 */
+  .item.missing .item-name { color: #cbd5e1; }
+  .item.missing .item-name-link { color: #cbd5e1; }
+  .item.missing .item-name-link:hover { color: #94a3b8; }
+  .item.missing .item-spec { color: #cbd5e1; }
+  .item.missing .item-score { color: #cbd5e1; font-weight: 400; }
+
+  .loading, .error-box {
+    text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 14px;
+  }
+  .error-box { color: #ef4444; }
+
+  .btn {
+    width: 100%; padding: 14px; border: none; border-radius: 10px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    transition: transform 0.1s; margin-top: 20px;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>📊 打分结果</h2>
+
+  <div class="phone-info" id="phoneInfo"></div>
+
+  <div class="total-score-box">
+    <div class="label">性价比分</div>
+    <div class="score" id="totalScore">—</div>
+    <div class="formula">= （硬件打分总分 ÷ 到手价格）× 1000</div>
+    <div class="raw-score">
+      <span>硬件总分：<b id="rawScore">—</b></span>
+      <span>到手价：<b id="rawPrice">—</b></span>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="loading">加载中...</div>
+  </div>
+
+  <button class="btn btn-primary" onclick="window.location.href='/'">返回首页</button>
+</div>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const phoneName = urlParams.get('phone') || '';
+const price = parseFloat(urlParams.get('price')) || 0;
+
+document.getElementById('phoneInfo').innerHTML =
+  `<div class="model">${phoneName || '未指定机型'}</div>
+   <div class="price">到手价：${price || '—'} 元</div>`;
+
+// ========== 硬件项 → 子类别 映射表 ==========
+const SUB_MAP = {
+  "一、核心计算单元": {
+    "SoC": "处理器（SoC）",
+    "影像协处理器": "处理器（SoC）",
+    "AI协处理器": "处理器（SoC）",
+    "安全协处理器": "处理器（SoC）",
+    "游戏独显芯片": "处理器（SoC）",
+    "触控IC": "处理器（SoC）",
+    "RAM": "存储系统",
+    "RAM容量": "存储系统",
+    "ROM": "存储系统",
+    "存储容量": "存储系统",
+    "扩展存储": "存储系统",
+  },
+  "二、显示系统": {
+    "面板类型": "屏幕模组",
+    "分辨率": "屏幕模组",
+    "刷新率": "屏幕模组",
+    "持续触控采样率": "屏幕模组",
+    "峰值触控采样率": "屏幕模组",
+    "手动最大亮度": "屏幕模组",
+    "局部峰值亮度": "屏幕模组",
+    "HBM全屏激发亮度": "屏幕模组",
+    "ppi": "屏幕模组",
+    "疏油层": "屏幕模组",
+    "盖板材质": "防护玻璃",
+  },
+  "三、影像系统": {
+    "主摄传感器尺寸": "后置摄像头-主摄",
+    "主摄像素": "后置摄像头-主摄",
+    "主摄光圈": "后置摄像头-主摄",
+    "主摄OIS": "后置摄像头-主摄",
+    "超广角传感器尺寸": "后置摄像头-超广角",
+    "超广角视角": "后置摄像头-超广角",
+    "超广角像素": "后置摄像头-超广角",
+    "超广角光圈": "后置摄像头-超广角",
+    "超广角OIS": "后置摄像头-超广角",
+    "自动对焦/微距": "后置摄像头-超广角",
+    "长焦像素": "后置摄像头-长焦",
+    "长焦变焦": "后置摄像头-长焦",
+    "长焦传感器尺寸": "后置摄像头-长焦",
+    "长焦OIS": "后置摄像头-长焦",
+    "激光对焦传感器": "后置摄像头-长焦",
+    "色温传感器": "后置摄像头-辅助传感器",
+    "Flicker传感器": "后置摄像头-辅助传感器",
+    "多光谱传感器": "后置摄像头-辅助传感器",
+    "前置广角像素": "前置摄像头",
+    "前置视角": "前置摄像头",
+    "前置传感器尺寸": "前置摄像头",
+    "前置像素": "前置摄像头",
+    "自动对焦（AF）": "前置摄像头",
+    "3D结构光模块": "前置摄像头",
+    "深感摄像头": "前置摄像头",
+    "镜头组": "光学组件",
+    "闪光灯": "光学组件",
+    "镀膜技术": "光学组件",
+    "OIS光学防抖马达": "光学组件",
+    "自研影像芯片": "光学组件",
+    "物理变焦环": "影像附加硬件",
+    "色彩摄像头": "影像附加硬件",
+  },
+  "四、能源系统": {
+    "电池容量": "电池",
+    "电池能量密度": "电池",
+    "双电芯设计": "电池",
+    "有线充电": "充电模块-有线",
+    "充电兼容档位": "充电模块-有线",
+    "无线充电": "充电模块-无线",
+    "反向无线充电": "充电模块-无线",
+    "电源管理芯片(PMIC)": "电源管理芯片",
+    "电池管理芯片": "电源管理芯片",
+    "快充芯片": "电源管理芯片",
+  },
+  "五、机身结构": {
+    "中框材质": "外壳材质",
+    "背板材质": "外壳材质",
+    "机身重量": "外壳材质",
+    "IP防护等级": "防护等级",
+    "VC均热板": "散热系统",
+    "石墨烯散热": "散热系统",
+    "主动散热": "散热系统",
+  },
+  "六、通信模块": {
+    "WiFi": "短距离通信",
+    "蓝牙": "短距离通信",
+    "NFC芯片": "短距离通信",
+    "红外遥控": "短距离通信",
+    "星闪模块": "短距离通信",
+    "UWB超宽带芯片": "短距离通信",
+    "频段支持": "蜂窝网络",
+    "射频增强芯片": "蜂窝网络",
+    "eSIM芯片": "蜂窝网络",
+    "天通卫星芯片": "卫星通信",
+    "北斗卫星芯片": "卫星通信",
+    "GPS/GNSS": "卫星通信",
+    "卫星通话/短信": "卫星通信",
+  },
+  "七、传感器系统": {
+    "光线传感器": "环境感知",
+    "气压计": "环境感知",
+    "湿度传感器": "环境感知",
+    "空气质量传感器": "环境感知",
+    "紫外线传感器": "环境感知",
+    "陀螺仪": "运动感知",
+    "加速度传感器": "运动感知",
+    "指南针/电子罗盘": "运动感知",
+    "指纹传感器类型": "生物识别",
+    "红外传感器": "辅助传感器",
+    "霍尔传感器": "辅助传感器",
+    "距离传感器": "辅助传感器",
+    "心率传感器": "辅助传感器",
+  },
+  "八、其他硬件": {
+    "扬声器": "音频系统",
+    "音频解码芯片": "音频系统",
+    "麦克风阵列": "音频系统",
+    "USB接口": "接口与扩展",
+    "USB视频输出": "接口与扩展",
+    "SIM卡槽": "接口与扩展",
+    "3.5mm耳机孔": "接口与扩展",
+  },
+};
+
+const CATEGORY_ORDER = [
+  "一、核心计算单元",
+  "二、显示系统",
+  "三、影像系统",
+  "四、能源系统",
+  "五、机身结构",
+  "六、通信模块",
+  "七、传感器系统",
+  "八、其他硬件",
+];
+
+// ========== 硬件项名 → rules.html 定位参数 ==========
+// key = "__simple__" 表示跳到「附加硬件项（简单计分）」卡片
+const ITEM_TO_RULE_KEY = {
+  // 一、核心计算单元
+  "SoC":              { cat: "一、核心计算单元", key: "soc" },
+  "RAM":              { cat: "一、核心计算单元", key: "ram" },
+  "RAM容量":          { cat: "一、核心计算单元", key: "ram_capacity" },
+  "ROM":              { cat: "一、核心计算单元", key: "rom" },
+  "存储容量":         { cat: "一、核心计算单元", key: "capacity" },
+  "扩展存储":         { cat: "一、核心计算单元", key: "expand_storage" },
+  "影像协处理器":     { cat: "一、核心计算单元", key: "__simple__" },
+  "AI协处理器":       { cat: "一、核心计算单元", key: "__simple__" },
+  "安全协处理器":     { cat: "一、核心计算单元", key: "__simple__" },
+  "游戏独显芯片":     { cat: "一、核心计算单元", key: "__simple__" },
+  "触控IC":           { cat: "一、核心计算单元", key: "__simple__" },
+
+  // 二、显示系统
+  "面板类型":         { cat: "二、显示系统", key: "panel_type" },
+  "分辨率":           { cat: "二、显示系统", key: "resolution" },
+  "刷新率":           { cat: "二、显示系统", key: "refresh_rate" },
+  "持续触控采样率":   { cat: "二、显示系统", key: "touch_sampling_cont" },
+  "峰值触控采样率":   { cat: "二、显示系统", key: "touch_sampling_peak" },
+  "手动最大亮度":     { cat: "二、显示系统", key: "brightness_manual" },
+  "局部峰值亮度":     { cat: "二、显示系统", key: "brightness_local_peak" },
+  "HBM全屏激发亮度":  { cat: "二、显示系统", key: "brightness_hbm" },
+  "ppi":              { cat: "二、显示系统", key: "__simple__" },
+  "盖板材质":         { cat: "二、显示系统", key: "__simple__" },
+  "疏油层":           { cat: "二、显示系统", key: "__simple__" },
+
+  // 三、影像系统
+  "主摄传感器尺寸":   { cat: "三、影像系统", key: "main_sensor_size" },
+  "主摄像素":         { cat: "三、影像系统", key: "main_pixel" },
+  "主摄光圈":         { cat: "三、影像系统", key: "main_aperture" },
+  "主摄OIS":          { cat: "三、影像系统", key: "main_ois" },
+  "超广角传感器尺寸": { cat: "三、影像系统", key: "ultra_sensor_size" },
+  "超广角视角":       { cat: "三、影像系统", key: "ultra_fov" },
+  "超广角像素":       { cat: "三、影像系统", key: "ultra_pixel" },
+  "超广角光圈":       { cat: "三、影像系统", key: "ultra_aperture" },
+  "超广角OIS":        { cat: "三、影像系统", key: "ultra_ois" },
+  "长焦像素":         { cat: "三、影像系统", key: "tele_pixel" },
+  "长焦变焦":         { cat: "三、影像系统", key: "tele_zoom" },
+  "长焦传感器尺寸":   { cat: "三、影像系统", key: "tele_sensor_size" },
+  "长焦OIS":          { cat: "三、影像系统", key: "tele_ois" },
+  "前置广角像素":     { cat: "三、影像系统", key: "front_wide_pixel" },
+  "前置视角":         { cat: "三、影像系统", key: "front_fov" },
+  "前置传感器尺寸":   { cat: "三、影像系统", key: "front_sensor_size" },
+  "前置像素":         { cat: "三、影像系统", key: "front_pixel" },
+  "自动对焦/微距":    { cat: "三、影像系统", key: "__simple__" },
+  "激光对焦传感器":   { cat: "三、影像系统", key: "__simple__" },
+  "色温传感器":       { cat: "三、影像系统", key: "__simple__" },
+  "Flicker传感器":    { cat: "三、影像系统", key: "__simple__" },
+  "多光谱传感器":     { cat: "三、影像系统", key: "__simple__" },
+  "自动对焦（AF）":   { cat: "三、影像系统", key: "__simple__" },
+  "3D结构光模块":     { cat: "三、影像系统", key: "__simple__" },
+  "深感摄像头":       { cat: "三、影像系统", key: "__simple__" },
+  "镜头组":           { cat: "三、影像系统", key: "__simple__" },
+  "闪光灯":           { cat: "三、影像系统", key: "__simple__" },
+  "镀膜技术":         { cat: "三、影像系统", key: "__simple__" },
+  "OIS光学防抖马达":  { cat: "三、影像系统", key: "__simple__" },
+  "自研影像芯片":     { cat: "三、影像系统", key: "__simple__" },
+  "物理变焦环":       { cat: "三、影像系统", key: "__simple__" },
+  "色彩摄像头":       { cat: "三、影像系统", key: "__simple__" },
+
+  // 四、能源系统
+  "电池容量":       { cat: "四、能源系统", key: "battery_capacity" },
+  "电池能量密度":   { cat: "四、能源系统", key: "battery_density" },
+  "有线充电":       { cat: "四、能源系统", key: "wired_charging" },
+  "无线充电":       { cat: "四、能源系统", key: "wireless_charging" },
+  "反向无线充电":   { cat: "四、能源系统", key: "reverse_wireless_charging" },
+  "双电芯设计":     { cat: "四、能源系统", key: "__simple__" },
+  "充电兼容档位":   { cat: "四、能源系统", key: "__simple__" },
+  "电源管理芯片(PMIC)": { cat: "四、能源系统", key: "__simple__" },
+  "电池管理芯片":   { cat: "四、能源系统", key: "__simple__" },
+  "快充芯片":       { cat: "四、能源系统", key: "__simple__" },
+
+  // 五、机身结构
+  "中框材质":   { cat: "五、机身结构", key: "frame_material" },
+  "机身重量":   { cat: "五、机身结构", key: "device_weight" },
+  "IP防护等级": { cat: "五、机身结构", key: "ip_rating" },
+  "VC均热板":   { cat: "五、机身结构", key: "vc_heat_pipe" },
+  "石墨烯散热": { cat: "五、机身结构", key: "graphene_cooling" },
+  "背板材质":   { cat: "五、机身结构", key: "__simple__" },
+  "主动散热":   { cat: "五、机身结构", key: "__simple__" },
+
+  // 六、通信模块
+  "WiFi": { cat: "六、通信模块", key: "wifi" },
+  "蓝牙": { cat: "六、通信模块", key: "bluetooth" },
+  "频段支持":      { cat: "六、通信模块", key: "__simple__" },
+  "射频增强芯片":  { cat: "六、通信模块", key: "__simple__" },
+  "NFC芯片":       { cat: "六、通信模块", key: "__simple__" },
+  "红外遥控":      { cat: "六、通信模块", key: "__simple__" },
+  "星闪模块":      { cat: "六、通信模块", key: "__simple__" },
+  "天通卫星芯片":  { cat: "六、通信模块", key: "__simple__" },
+  "北斗卫星芯片":  { cat: "六、通信模块", key: "__simple__" },
+  "GPS/GNSS":      { cat: "六、通信模块", key: "__simple__" },
+  "卫星通话/短信": { cat: "六、通信模块", key: "__simple__" },
+  "UWB超宽带芯片": { cat: "六、通信模块", key: "__simple__" },
+  "eSIM芯片":      { cat: "六、通信模块", key: "__simple__" },
+
+  // 七、传感器系统（全部简单计分）
+  "光线传感器":      { cat: "七、传感器系统", key: "__simple__" },
+  "气压计":          { cat: "七、传感器系统", key: "__simple__" },
+  "湿度传感器":      { cat: "七、传感器系统", key: "__simple__" },
+  "空气质量传感器":  { cat: "七、传感器系统", key: "__simple__" },
+  "紫外线传感器":    { cat: "七、传感器系统", key: "__simple__" },
+  "陀螺仪":          { cat: "七、传感器系统", key: "__simple__" },
+  "加速度传感器":    { cat: "七、传感器系统", key: "__simple__" },
+  "指南针/电子罗盘": { cat: "七、传感器系统", key: "__simple__" },
+  "指纹传感器类型":  { cat: "七、传感器系统", key: "__simple__" },
+  "红外传感器":      { cat: "七、传感器系统", key: "__simple__" },
+  "霍尔传感器":      { cat: "七、传感器系统", key: "__simple__" },
+  "距离传感器":      { cat: "七、传感器系统", key: "__simple__" },
+  "心率传感器":      { cat: "七、传感器系统", key: "__simple__" },
+
+  // 八、其他硬件
+  "USB接口":      { cat: "八、其他硬件", key: "usb_c" },
+  "USB视频输出":  { cat: "八、其他硬件", key: "usb_video" },
+  "SIM卡槽":      { cat: "八、其他硬件", key: "sim_slot" },
+  "扬声器":       { cat: "八、其他硬件", key: "speaker" },
+  "音频解码芯片": { cat: "八、其他硬件", key: "__simple__" },
+  "麦克风阵列":   { cat: "八、其他硬件", key: "__simple__" },
+  "3.5mm耳机孔":  { cat: "八、其他硬件", key: "__simple__" },
+};
+
+// ========== 从 SUB_MAP 反推完整清单 ==========
+const FULL_SCHEMA = (() => {
+  const schema = {};
+  for (const [system, items] of Object.entries(SUB_MAP)) {
+    schema[system] = {};
+    for (const [itemName, subName] of Object.entries(items)) {
+      (schema[system][subName] ??= []).push(itemName);
+    }
+  }
+  return schema;
+})();
+
+// ========== 组装 categories（含缺失项） ==========
+function buildCategories(result) {
+  const index = {};
+  result.details.forEach(d => {
+    index[d.system] ??= {};
+    index[d.system][d.item] = { value: d.value, score: d.score };
+  });
+
+  return CATEGORY_ORDER.map(sys => {
+    const subcats = FULL_SCHEMA[sys] || {};
+    const subList = Object.entries(subcats).map(([subName, itemNames]) => {
+      const items = itemNames.map(itemName => {
+        const hit = index[sys]?.[itemName];
+        if (hit) {
+          return { name: itemName, spec: hit.value, score: hit.score, has: true };
+        }
+        return { name: itemName, spec: "—", score: "—", has: false };
+      });
+      return { name: subName, items };
+    });
+
+    return {
+      name: sys,
+      score: result.system_scores[sys] || 0,
+      subcategories: subList,
+    };
+  });
+}
+
+// ========== 渲染 ==========
+function renderWithData(result) {
+  document.getElementById('phoneInfo').innerHTML =
+    `<div class="model">${result.phone}</div>
+     <div class="price">到手价：${result.price} 元</div>`;
+
+  document.getElementById('totalScore').textContent = result["性价比分"];
+  document.getElementById('rawScore').textContent = result.total + ' 分';
+  document.getElementById('rawPrice').textContent = result.price + ' 元';
+
+  const categories = buildCategories(result);
+
+  let html = '';
+  categories.forEach((cat, ci) => {
+    const openClass = ci === 0 ? ' open' : '';
+    html += `
+      <div class="category${openClass}" id="cat-${ci}">
+        <div class="category-header" onclick="toggleCat(${ci})">
+          <span class="cat-name">${cat.name}</span>
+          <span style="display:flex;align-items:center">
+            <span class="cat-score">${cat.score} 分</span>
+            <span class="arrow">▶</span>
+          </span>
+        </div>
+        <div class="category-body">`;
+
+    cat.subcategories.forEach(sub => {
+      html += `
+        <div class="subcategory">
+          <div class="sub-name">${sub.name}</div>
+          <div class="item-header">
+            <span>硬件项</span>
+            <span>规格</span>
+            <span>分数</span>
+          </div>`;
+      sub.items.forEach(it => {
+        // 所有硬件项都是链接
+        const mapping = ITEM_TO_RULE_KEY[it.name];
+        const nameHtml = mapping
+          ? `<a class="item-name-link" target="_blank" rel="noopener" href="rules.html?cat=${encodeURIComponent(mapping.cat)}&key=${encodeURIComponent(mapping.key)}">${it.name}</a>`
+          : `<span class="item-name">${it.name}</span>`;
+
+        if (it.has) {
+          html += `
+            <div class="item">
+              ${nameHtml}
+              <span class="item-spec">${it.spec}</span>
+              <span class="item-score">${it.score} 分</span>
+            </div>`;
+        } else {
+          html += `
+            <div class="item missing">
+              ${nameHtml}
+              <span class="item-spec">—</span>
+              <span class="item-score">—</span>
+            </div>`;
+        }
+      });
+      html += `</div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function toggleCat(i) {
+  document.getElementById(`cat-${i}`).classList.toggle('open');
+}
+
+// ========== 请求后端 ==========
+async function loadScore() {
+  if (urlParams.get("temp") === "1") {
+    const raw = sessionStorage.getItem("temp_result");
+    if (!raw) {
+      document.getElementById("content").innerHTML =
+        '<div class="error-box">临时数据已丢失，请返回重新操作</div>';
+      return;
+    }
+    try {
+      const result = JSON.parse(raw);
+      sessionStorage.removeItem("temp_result");
+      renderWithData(result);
+    } catch (e) {
+      document.getElementById("content").innerHTML =
+        '<div class="error-box">数据解析失败</div>';
+    }
+    return;
+  }
+
+  if (!phoneName) {
+    document.getElementById('content').innerHTML =
+      '<div class="error-box">缺少机型参数，请返回首页重新选择</div>';
+    return;
+  }
+  if (!price || price <= 0) {
+    document.getElementById('content').innerHTML =
+      '<div class="error-box">价格无效，请返回首页重新填写</div>';
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `/api/score_by_phone?phone=${encodeURIComponent(phoneName)}&price=${price}`
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    const result = await res.json();
+    renderWithData(result);
+  } catch (err) {
+    document.getElementById('content').innerHTML =
+      `<div class="error-box">加载失败：${err.message}</div>`;
+  }
+}
+
+loadScore();
+</script>
+</body>
+</html>

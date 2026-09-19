@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>手机性价比打分系统 - 首页</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #eff6ff 0%, #dbeafe 45%, #ffffff 100%);
+    color: #1e293b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 36px 30px;
+    width: 440px;
+    max-width: 94vw;
+    box-shadow: 0 10px 40px rgba(37, 99, 235, 0.10), 0 2px 8px rgba(37, 99, 235, 0.06);
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 28px;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: #1d4ed8;
+    font-weight: 700;
+  }
+
+  .form-group { margin-bottom: 20px; position: relative; }
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #475569;
+    font-weight: 500;
+  }
+
+  /* 输入框 */
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    color: #1e293b;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+  input::placeholder { color: #94a3b8; }
+  input:focus {
+    border-color: #3b82f6;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+
+  /* 去掉数字输入框的加减号 */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  /* 带后缀的输入框（如价格「元」） */
+  .input-with-suffix { position: relative; }
+  .input-with-suffix input { padding-right: 44px; }
+  .input-with-suffix .suffix {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: #94a3b8;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* 下拉搜索列表 */
+  .dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 260px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    margin-top: 6px;
+    display: none;
+    z-index: 100;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  }
+  .dropdown-list.active { display: block; }
+
+  /* 品牌分组标题 */
+  .dropdown-list .brand-header {
+    padding: 8px 16px 4px;
+    font-size: 12px;
+    color: #2563eb;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: #f8fafc;
+    position: sticky;
+    top: 0;
+    cursor: default;
+  }
+  .dropdown-list .brand-header:hover { background: #f8fafc; color: #2563eb; }
+
+  .dropdown-list li.item {
+    padding: 11px 16px 11px 24px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s, color 0.15s;
+  }
+  .dropdown-list li.item:last-child { border-bottom: none; }
+  .dropdown-list li.item:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+  .dropdown-list li.item.selected {
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-weight: 600;
+  }
+
+  /* 空状态 / 加载提示 */
+  .dropdown-list .empty-tip {
+    padding: 14px 16px;
+    color: #94a3b8;
+    font-size: 13px;
+    text-align: center;
+    cursor: default;
+  }
+  .dropdown-list .empty-tip:hover { background: transparent; color: #94a3b8; }
+
+  /* 按钮 */
+  .btn {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: transform 0.1s, box-shadow 0.2s, background 0.2s;
+  }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.30);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.40);
+  }
+
+  .btn-secondary {
+    background: #ffffff;
+    color: #2563eb;
+    border: 1.5px solid #bfdbfe;
+    font-size: 14px;
+  }
+  .btn-secondary:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+  }
+
+  .error-tip {
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 6px;
+    display: none;
+  }
+
+  /* 滚动条美化（Chrome） */
+  .dropdown-list::-webkit-scrollbar { width: 6px; }
+  .dropdown-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  .dropdown-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h2>📱 手机性价比打分系统</h2>
+
+  <div class="form-group">
+    <label>选择机型（可搜索）</label>
+    <input type="text" id="phoneInput" placeholder="输入品牌或型号筛选..." autocomplete="off" />
+    <ul class="dropdown-list" id="phoneDropdown"></ul>
+  </div>
+
+  <div class="form-group">
+    <label>到手价格（元）</label>
+    <div class="input-with-suffix">
+      <input type="number" id="priceInput" placeholder="请输入实际到手价格..." min="0" />
+      <span class="suffix">元</span>
+    </div>
+    <div class="error-tip" id="errorTip">请选择机型并填写到手价格</div>
+  </div>
+
+  <button class="btn btn-primary" onclick="startScore()">开始打分</button>
+
+  <button class="btn btn-secondary" onclick="window.location.href='rules.html'">打分细则</button>
+  <button class="btn btn-secondary" onclick="window.location.href='custom.html'">自定义添加机型</button>
+</div>
+
+<script>
+  // ========== 内置机型（后端不可用时的兜底数据）==========
+  const FALLBACK_PHONES = [
+    "华为 Mate 60 Pro", "华为 Mate 60", "华为 P60 Pro", "华为 nova 12 Pro",
+    "小米 14 Ultra", "小米 14", "Redmi K70 Pro",
+    "OPPO Find X7 Ultra", "OPPO Reno 11",
+    "vivo X100 Pro", "vivo S18",
+    "一加 12", "荣耀 Magic6 Pro"
+  ];
+
+  // ========== 全局状态 ==========
+  let phoneDB = [];           // 机型列表（从后端拉，失败则用兜底）
+  let phoneGroups = {};       // 按品牌分组后的结果
+
+  const phoneInput = document.getElementById('phoneInput');
+  const dropdown = document.getElementById('phoneDropdown');
+  const priceInput = document.getElementById('priceInput');
+  const errorTip = document.getElementById('errorTip');
+
+  // ========== 从后端拉取机型 ==========
+  async function loadPhones() {
+    try {
+      const res = await fetch('/api/phones');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      // 期望格式：["华为 Mate 60 Pro", "小米 14 Ultra", ...]
+      if (Array.isArray(data) && data.length > 0) {
+        phoneDB = data;
+      } else {
+        phoneDB = FALLBACK_PHONES;
+      }
+    } catch (err) {
+      // 后端接口还不存在时走这里，用内置列表兜底
+      console.warn('机型接口不可用，使用内置列表：', err.message);
+      phoneDB = FALLBACK_PHONES;
+    }
+    phoneGroups = groupByBrand(phoneDB);
+  }
+
+  // 从机型名前缀提取品牌
+  function groupByBrand(phones) {
+    const groups = {};
+    phones.forEach(p => {
+      const brand = extractBrand(p);
+      (groups[brand] ??= []).push(p);
+    });
+    // 品牌按首字母排序（中英文都支持）
+    const sorted = {};
+    Object.keys(groups)
+      .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
+      .forEach(k => { sorted[k] = groups[k]; });
+    return sorted;
+  }
+
+  function extractBrand(fullName) {
+    // "华为 Mate 60 Pro" → "华为"
+    // "Redmi K70 Pro"    → "Redmi"
+    // "一加 12"          → "一加"
+    const parts = fullName.trim().split(/\s+/);
+    return parts[0] || '其他';
+  }
+
+  // ========== 下拉渲染 ==========
+  function renderDropdown(filterText = '') {
+    dropdown.innerHTML = '';
+
+    // 只在输入框聚焦时弹出
+    if (document.activeElement !== phoneInput) {
+      dropdown.classList.remove('active');
+      return;
+    }
+
+    // 还没加载完就显示加载提示
+    if (phoneDB.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'empty-tip';
+      li.textContent = '加载中...';
+      dropdown.appendChild(li);
+      dropdown.classList.add('active');
+      return;
+    }
+
+    const q = filterText.toLowerCase().trim();
+    const currentValue = phoneInput.value.trim();
+
+    // 根据过滤条件筛出匹配机型，再按品牌分组
+    const matchedGroups = {};
+    Object.entries(phoneGroups).forEach(([brand, list]) => {
+      const matched = list.filter(p => p.toLowerCase().includes(q));
+      if (matched.length) matchedGroups[brand] = matched;
+    });
+
+    const totalMatched = Object.values(matchedGroups).reduce((s, arr) => s + arr.length, 0);
+
+    if (totalMatched === 0) {
+      const li = document.createElement('li');
+      li.className = 'empty-tip';
+      li.textContent = '未找到匹配机型，可直接点击下方「自定义添加机型」';
+      dropdown.appendChild(li);
+      dropdown.classList.add('active');
+      return;
+    }
+
+    // 逐品牌渲染
+    Object.entries(matchedGroups).forEach(([brand, list]) => {
+      const header = document.createElement('li');
+      header.className = 'brand-header';
+      header.textContent = brand;
+      dropdown.appendChild(header);
+
+      list.forEach(p => {
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.textContent = p;
+        if (p === currentValue) li.classList.add('selected');
+        li.onclick = () => {
+          phoneInput.value = p;
+          dropdown.classList.remove('active');
+          priceInput.focus();
+        };
+        dropdown.appendChild(li);
+      });
+    });
+
+    dropdown.classList.add('active');
+  }
+
+  // ========== 事件绑定 ==========
+  phoneInput.addEventListener('focus', () => renderDropdown(phoneInput.value));
+  phoneInput.addEventListener('input', () => renderDropdown(phoneInput.value));
+
+  // 点击外部收起
+  document.addEventListener('click', (e) => {
+    if (!phoneInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.remove('active');
+    }
+  });
+
+  // 回车键
+  [phoneInput, priceInput].forEach(el => {
+    el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+
+      if (el === phoneInput && dropdown.classList.contains('active')) {
+        const first = dropdown.querySelector('li.item');
+        if (first) {
+          phoneInput.value = first.textContent;
+          dropdown.classList.remove('active');
+          priceInput.focus();
+          return;
+        }
+      }
+      startScore();
+    });
+  });
+
+  // ========== 开始打分 ==========
+  function startScore() {
+    const phone = phoneInput.value.trim();
+    const price = priceInput.value.trim();
+
+    if (!phone || !price) {
+      errorTip.style.display = 'block';
+      return;
+    }
+    if (Number(price) <= 0 || isNaN(Number(price))) {
+      errorTip.textContent = '价格必须是大于 0 的数字';
+      errorTip.style.display = 'block';
+      return;
+    }
+    errorTip.style.display = 'none';
+
+    window.location.href =
+      `score.html?phone=${encodeURIComponent(phone)}&price=${encodeURIComponent(price)}`;
+  }
+
+  // ========== 启动 ==========
+  loadPhones();
+</script>
+
+</body>
+</html>

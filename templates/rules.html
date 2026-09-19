@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>打分细则 - 手机性价比打分系统</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #eff6ff 0%, #dbeafe 45%, #ffffff 100%);
+    color: #1e293b; min-height: 100vh; padding: 32px 20px 60px;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 24px; color: #1d4ed8; margin-bottom: 6px; font-weight: 700; }
+  .subtitle { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 28px; }
+
+  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 24px; }
+  .tabs button {
+    padding: 10px 8px; background: #ffffff; border: 1.5px solid #e2e8f0;
+    border-radius: 8px; font-size: 13px; color: #475569; cursor: pointer;
+    transition: all 0.15s; font-family: inherit; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tabs button:hover { border-color: #93c5fd; color: #2563eb; }
+  .tabs button.active {
+    background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff;
+    border-color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  details.table-card {
+    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;
+    margin-bottom: 12px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.05);
+    overflow: hidden; transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  details.table-card[open] { border-color: #93c5fd; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.10); }
+  details.table-card.highlight { animation: flash 1.2s ease; }
+  @keyframes flash {
+    0%, 100% { background: #ffffff; }
+    30% { background: #dbeafe; }
+  }
+
+  details.table-card > summary {
+    list-style: none; cursor: pointer; padding: 14px 20px;
+    font-size: 15px; color: #1d4ed8; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center;
+    user-select: none; transition: background 0.15s;
+  }
+  details.table-card > summary::-webkit-details-marker { display: none; }
+  details.table-card > summary:hover { background: #eff6ff; }
+  details.table-card > summary .arrow {
+    font-size: 12px; color: #64748b; transition: transform 0.25s; margin-left: 12px;
+  }
+  details.table-card[open] > summary .arrow { transform: rotate(90deg); }
+  details.table-card .card-body { padding: 4px 20px 18px; border-top: 1px solid #f1f5f9; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table th {
+    text-align: left; padding: 8px 10px; background: #f8fafc; color: #64748b;
+    font-weight: 600; font-size: 12px; border-bottom: 1px solid #e2e8f0;
+  }
+  table td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+  table tr:last-child td { border-bottom: none; }
+  table tr:hover td { background: #f8fafc; }
+  .score-cell { color: #2563eb; font-weight: 600; text-align: right; white-space: nowrap; }
+
+  .sub-label { font-size: 12px; color: #2563eb; font-weight: 600; margin: 14px 0 6px; padding-left: 4px; }
+  .sub-label:first-child { margin-top: 0; }
+
+  .loading, .error-box {
+    text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 14px;
+    background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;
+  }
+  .error-box { color: #ef4444; }
+
+  .back-btn {
+    display: block; width: 100%; max-width: 320px; margin: 32px auto 0;
+    padding: 13px; background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.30);
+    transition: transform 0.1s, box-shadow 0.2s; font-family: inherit;
+  }
+  .back-btn:active { transform: scale(0.98); }
+  .back-btn:hover { box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4); }
+
+  @media (max-width: 640px) { .tabs { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>📋 打分细则</h1>
+  <div class="subtitle">所有硬件项的分数档位一览</div>
+  <div class="tabs" id="tabs"></div>
+  <div id="content"><div class="loading">加载中...</div></div>
+  <button class="back-btn" onclick="window.location.href='/'">返回首页</button>
+</div>
+
+<script>
+const RULE_SCHEMA = {
+  "一、核心计算单元": [
+    { key: "soc",            title: "SoC 型号",   col: "型号" },
+    { key: "ram",            title: "RAM 代次",   col: "版本" },
+    { key: "ram_capacity",   title: "RAM 容量",   col: "容量_GB", suffix: "GB" },
+    { key: "rom",            title: "ROM 版本",   col: "版本" },
+    { key: "capacity",       title: "存储容量",   col: "容量_GB", suffix: "GB" },
+    { key: "expand_storage", title: "扩展存储",   expand: true },
+  ],
+  "二、显示系统": [
+    { key: "panel_type",            title: "面板类型",       col: "类型" },
+    { key: "resolution",            title: "分辨率",         col: "分辨率" },
+    { key: "refresh_rate",          title: "刷新率",         col: "刷新率" },
+    { key: "touch_sampling_cont",   title: "持续触控采样率", col: "采样率" },
+    { key: "touch_sampling_peak",   title: "峰值触控采样率", col: "采样率" },
+    { key: "brightness_manual",     title: "手动最大亮度",   col: "亮度" },
+    { key: "brightness_local_peak", title: "局部峰值亮度",   col: "亮度" },
+    { key: "brightness_hbm",        title: "HBM全屏激发亮度", col: "亮度" },
+  ],
+  "三、影像系统": [
+    { key: "main_sensor_size",  title: "主摄 - 传感器尺寸",   col: "尺寸" },
+    { key: "main_pixel",        title: "主摄 - 像素",         col: "像素" },
+    { key: "main_aperture",     title: "主摄 - 光圈",         col: "光圈" },
+    { key: "main_ois",          title: "主摄 - OIS",          col: "等级" },
+    { key: "ultra_sensor_size", title: "超广角 - 传感器尺寸", col: "尺寸" },
+    { key: "ultra_fov",         title: "超广角 - 视角",       col: "视角" },
+    { key: "ultra_pixel",       title: "超广角 - 像素",       col: "像素" },
+    { key: "ultra_aperture",    title: "超广角 - 光圈",       col: "光圈" },
+    { key: "ultra_ois",         title: "超广角 - OIS",        col: "等级" },
+    { key: "tele_pixel",        title: "长焦 - 像素",         col: "像素" },
+    { key: "tele_zoom",         title: "长焦 - 光学变焦",     col: "变焦" },
+    { key: "tele_sensor_size",  title: "长焦 - 传感器尺寸",   col: "尺寸" },
+    { key: "tele_ois",          title: "长焦 - OIS",          col: "等级" },
+    { key: "front_wide_pixel",  title: "前置 - 广角像素",     col: "像素" },
+    { key: "front_fov",         title: "前置 - 视角",         col: "视角" },
+    { key: "front_sensor_size", title: "前置 - 传感器尺寸",   col: "尺寸" },
+    { key: "front_pixel",       title: "前置 - 像素",         col: "像素" },
+  ],
+  "四、能源系统": [
+    { key: "battery_capacity",          title: "电池容量",     col: "区间" },
+    { key: "battery_density",           title: "电池能量密度", col: "区间" },
+    { key: "wired_charging",            title: "有线充电",     col: "区间" },
+    { key: "wireless_charging",         title: "无线充电",     col: "区间" },
+    { key: "reverse_wireless_charging", title: "反向无线充电", col: "区间" },
+  ],
+  "五、机身结构": [
+    { key: "frame_material",   title: "中框材质",      col: "材质" },
+    { key: "device_weight",    title: "机身重量",      col: "区间" },
+    { key: "ip_rating",        title: "IP 防护等级",   col: "等级" },
+    { key: "vc_heat_pipe",     title: "VC 均热板面积", col: "区间" },
+    { key: "graphene_cooling", title: "石墨烯散热",    col: "类型" },
+  ],
+  "六、通信模块": [
+    { key: "wifi",      title: "WiFi 版本", col: "版本" },
+    { key: "bluetooth", title: "蓝牙版本",  col: "版本" },
+  ],
+  "七、传感器系统": [],
+  "八、其他硬件": [
+    { key: "usb_c",     title: "USB 接口",     col: "协议" },
+    { key: "usb_video", title: "USB 视频输出", col: "协议" },
+    { key: "sim_slot",  title: "SIM 卡槽",     col: "方案" },
+    { key: "speaker",   title: "扬声器",       col: "方案" },
+  ],
+};
+
+let RULES = null;
+
+async function init() {
+  try {
+    const res = await fetch("/api/rules");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    RULES = await res.json();
+  } catch (err) {
+    document.getElementById("content").innerHTML =
+      `<div class="error-box">加载失败：${err.message}</div>`;
+    return;
+  }
+  renderTabs();
+  renderPanels();
+  applyUrlParams();
+}
+
+// ========== 根据 URL 参数定位 ==========
+function applyUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  const targetCat = params.get("cat");
+  const targetKey = params.get("key");
+  if (!targetCat) return;
+
+  if (!RULES.categories.includes(targetCat)) return;
+
+  switchTab(targetCat);
+
+  if (!targetKey) return;
+
+  // 等 DOM 更新完再定位
+  setTimeout(() => {
+    const panel = document.querySelector(`.panel[data-cat="${CSS.escape(targetCat)}"]`);
+    if (!panel) return;
+    const card = panel.querySelector(`details[data-key="${CSS.escape(targetKey)}"]`);
+    if (!card) return;
+
+    card.open = true;
+    card.classList.add("highlight");
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => card.classList.remove("highlight"), 1500);
+  }, 120);
+}
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  RULES.categories.forEach((cat, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = cat;
+    if (i === 0) btn.classList.add("active");
+    btn.onclick = () => switchTab(cat);
+    tabs.appendChild(btn);
+  });
+}
+
+function switchTab(cat) {
+  document.querySelectorAll(".tabs button").forEach(b =>
+    b.classList.toggle("active", b.textContent === cat)
+  );
+  document.querySelectorAll(".panel").forEach(p =>
+    p.classList.toggle("active", p.dataset.cat === cat)
+  );
+}
+
+function renderPanels() {
+  const container = document.getElementById("content");
+  container.innerHTML = "";
+  RULES.categories.forEach((cat, i) => {
+    const panel = document.createElement("div");
+    panel.className = "panel" + (i === 0 ? " active" : "");
+    panel.dataset.cat = cat;
+
+    (RULE_SCHEMA[cat] || []).forEach(schema => {
+      panel.appendChild(renderTableCard(schema));
+    });
+
+    const simpleItems = (RULES.simple_scoring || []).filter(s => s["大类"] === cat);
+    if (simpleItems.length) {
+      panel.appendChild(renderSimpleCard(simpleItems));
+    }
+
+    container.appendChild(panel);
+  });
+}
+
+function renderTableCard(schema) {
+  const card = document.createElement("details");
+  card.className = "table-card";
+  card.dataset.key = schema.key;
+
+  if (schema.expand) {
+    const es = RULES.expand_storage;
+    card.innerHTML = `
+      <summary>
+        <span>${schema.title}</span>
+        <span class="arrow">▶</span>
+      </summary>
+      <div class="card-body">
+        <table>
+          <thead><tr><th>卡类型</th><th>容量</th><th class="score-cell">分数</th></tr></thead>
+          <tbody>
+            <tr><td>无扩展存储</td><td>—</td><td class="score-cell">0</td></tr>
+            ${es.tf_capacities.map((c, idx) => `
+              <tr>
+                ${idx === 0 ? `<td rowspan="${es.tf_capacities.length}">TF卡</td>` : ""}
+                <td>${c["容量_GB"]}GB</td>
+                <td class="score-cell">${c["分数"]}</td>
+              </tr>
+            `).join("")}
+            ${es.nm_capacities.map((c, idx) => `
+              <tr>
+                ${idx === 0 ? `<td rowspan="${es.nm_capacities.length}">华为NM卡</td>` : ""}
+                <td>${c["容量_GB"]}GB</td>
+                <td class="score-cell">${c["分数"]}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>`;
+    return card;
+  }
+
+  const list = RULES[schema.key] || [];
+  if (list.length === 0) return card;
+
+  const rows = list.map(item => {
+    let value = item[schema.col] ?? "—";
+    if (schema.suffix) value = `${value}${schema.suffix}`;
+    return `<tr><td>${value}</td><td class="score-cell">${item["分数"]}</td></tr>`;
+  }).join("");
+
+  card.innerHTML = `
+    <summary>
+      <span>${schema.title}<span style="font-size:12px;color:#94a3b8;font-weight:400;margin-left:8px;">${list.length}档</span></span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>档位</th><th class="score-cell">分数</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  return card;
+}
+
+function renderSimpleCard(items) {
+  const card = document.createElement("details");
+  card.className = "table-card";
+  card.dataset.key = "__simple__";
+
+  const grouped = {};
+  items.forEach(s => { (grouped[s["子类别"]] ??= []).push(s); });
+
+  let bodyHtml = "";
+  Object.entries(grouped).forEach(([subName, rules]) => {
+    bodyHtml += `<div class="sub-label">${subName}</div>
+      <table>
+        <thead>
+          <tr><th>硬件项</th><th>规则</th><th class="score-cell">分数</th></tr>
+        </thead>
+        <tbody>
+          ${rules.map(r => `
+            <tr>
+              <td>${r["硬件项"]}</td>
+              <td>${r["规则"]}</td>
+              <td class="score-cell">${r["分数"] === "多少" ? "按数量" : r["分数"]}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`;
+  });
+
+  card.innerHTML = `
+    <summary>
+      <span>附加硬件项（简单计分）<span style="font-size:12px;color:#94a3b8;font-weight:400;margin-left:8px;">${items.length}条</span></span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="card-body">${bodyHtml}</div>`;
+  return card;
+}
+
+init();
+</script>
+</body>
+</html>
