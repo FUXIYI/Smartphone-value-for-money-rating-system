@@ -39,24 +39,24 @@ cd Smartphone-value-for-money-rating-system
 ### 3. 安装依赖
 
 💡 温馨提示：为了避免与电脑里其他 Python 项目冲突，推荐使用虚拟环境（venv）单独安装。
-```bash
-Windows 用户：
 
+Windows 用户：
+```bash
 python -m venv venv           # 创建一个独立的虚拟环境文件夹
 venv\Scripts\activate         # 激活虚拟环境（成功后命令行最前面会出现 (venv)）
 pip install -r requirements.txt  # 安装本项目唯一需要的工具 Flask
-
+```
 
 macOS / Linux 用户：
-
+```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 ### 4. 启动应用
-```bash
+
 在虚拟环境激活的状态下，运行主程序：
-
+```bash
 python app.py
-
+```
 启动成功后，打开浏览器访问 http://127.0.0.1:5000 即可体验。
